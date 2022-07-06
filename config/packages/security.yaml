@@ -2,6 +2,8 @@ security:
     enable_authenticator_manager: true
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
+        # Use native password hasher, which auto-selects and migrates the best
+        # possible hashing algorithm (starting from Symfony 5.3 this is "bcrypt")
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
@@ -10,25 +12,48 @@ security:
             entity:
                 class: App\Entity\User
                 property: email
+    encoders:
+        # use your user class name here
+        App\Entity\User:
+            # Use native password encoder
+            # This value auto-selects the best possible hashing algorithm
+            # (i.e. Sodium when available).
+            algorithm: auto
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
+            anonymous: true
             lazy: true
             provider: app_user_provider
-            json_login:
-                # api_login is a route we will create below
-                check_path: api_login
             # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
+            # https://symfony.com/doc/current/security.html#firewalls-authentication
 
+            json_login:
+                check_path: /api/login
+                username_path: security.credentials.login
+                password_path: security.credentials.password
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
+
+            # Se déconnecter
+            logout:
+                # Nom de la route qui correspond à la déconnexion
+                path: app_logout
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        # require ROLE_ADMIN for /admin*
+        - { path: '^/admin', roles: ROLE_ADMIN }
+
+        # or require ROLE_ADMIN or IS_AUTHENTICATED_FULLY for /admin*
+        - { path: '^/admin', roles: [IS_AUTHENTICATED_FULLY, ROLE_ADMIN] }
+
+        # the 'path' value can be any valid regular expression
+        # (this one will match URLs like /api/post/7298 and /api/comment/528491)
+        - { path: ^/api/(post|comment)/\d+$, roles: ROLE_USER }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
 
