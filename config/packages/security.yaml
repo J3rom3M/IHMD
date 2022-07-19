@@ -20,42 +20,24 @@ security:
             # (i.e. Sodium when available).
             algorithm: auto
     firewalls:
-        dev:
-            pattern: ^/(_(profiler|wdt)|css|images|js)/
-            security: false
-        main:
-#            anonymous: true
-            lazy: true
-            provider: app_user_provider
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#firewalls-authentication
-
+        login:
+            pattern: ^/api/login
+            stateless: true
             json_login:
-                check_path: /api/login
-                username_path: security.credentials.login
-                password_path: security.credentials.password
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+                check_path: /api/login_check
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-            # Se déconnecter
-            logout:
-                # Nom de la route qui correspond à la déconnexion
-                path: app_logout
+        api:
+            pattern:   ^/api
+            stateless: true
+            guard:
+                authenticators:
+                    - lexik_jwt_authentication.jwt_token_authenticator
 
-    # Easy way to control access for large sections of your site
-    # Note: Only the *first* access control that matches will be used
     access_control:
-        # require ROLE_ADMIN for /admin*
-        # - { path: '^/admin', roles: ROLE_ADMIN }
-
-        # or require ROLE_ADMIN or IS_AUTHENTICATED_FULLY for /admin*
-        # - { path: '^/admin', roles: [IS_AUTHENTICATED_FULLY, ROLE_ADMIN] }
-
-        # the 'path' value can be any valid regular expression
-        # (this one will match URLs like /api/post/7298 and /api/comment/528491)
-        # - { path: ^/api/(post|comment)/\d+$, roles: ROLE_USER }
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
